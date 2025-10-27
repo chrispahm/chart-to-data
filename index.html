@@ -1,0 +1,808 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Chart to Data</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: monospace;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 20px;
+        }
+
+        .section {
+            background: white;
+            padding: 20px;
+            border-radius: 4px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        h1 {
+            grid-column: 1 / -1;
+            font-size: 24px;
+            margin-bottom: 20px;
+        }
+
+        h2 {
+            font-size: 16px;
+            margin-bottom: 15px;
+            border-bottom: 1px solid #ddd;
+            padding-bottom: 10px;
+        }
+        
+        .description {
+            font-size: 13px;
+            color: #555;
+            margin-bottom: 16px;
+        }
+
+        .controls {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+        }
+
+        .control-group {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        label {
+            font-size: 13px;
+            font-weight: bold;
+            color: #333;
+        }
+
+        input[type="number"],
+        input[type="color"],
+        select {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        input[type="file"] {
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 13px;
+        }
+
+        input[type="range"] {
+            -webkit-appearance: none;
+            width: 100%;
+            height: 6px;
+            border-radius: 3px;
+            background: #ddd;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #333;
+            cursor: pointer;
+        }
+
+        input[type="range"]::-moz-range-thumb {
+            width: 18px;
+            height: 18px;
+            border-radius: 50%;
+            background: #333;
+            cursor: pointer;
+            border: none;
+        }
+
+        .axis-inputs {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+
+        button {
+            padding: 10px 15px;
+            background: #333;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            cursor: pointer;
+            font-size: 13px;
+            font-family: monospace;
+        }
+
+        button:hover {
+            background: #555;
+        }
+
+        button.danger {
+            background: #d32f2f;
+        }
+
+        button.danger:hover {
+            background: #b71c1c;
+        }
+
+        canvas {
+            border: 2px solid #333;
+            display: block;
+            background: white;
+            cursor: crosshair;
+            width: 100%;
+            height: 400px;
+        }
+
+        textarea {
+            width: 100%;
+            height: 350px;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 3px;
+            font-family: monospace;
+            font-size: 12px;
+            resize: vertical;
+        }
+
+        .color-list {
+            display: flex;
+            flex-direction: column;
+            gap: 10px;
+        }
+
+        .color-item {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            padding: 10px;
+            background: #f9f9f9;
+            border-radius: 3px;
+            border: 1px solid #eee;
+        }
+
+        .color-swatch {
+            width: 30px;
+            height: 30px;
+            border-radius: 3px;
+            border: 1px solid #999;
+            cursor: pointer;
+        }
+
+        .color-info {
+            flex: 1;
+            font-size: 12px;
+        }
+
+        .color-info .label {
+            display: block;
+            color: #666;
+            font-weight: normal;
+        }
+
+        .color-item button {
+            padding: 6px 10px;
+            font-size: 11px;
+        }
+
+        .button-row {
+            display: flex;
+            gap: 10px;
+        }
+
+        .button-row button {
+            flex: 1;
+        }
+    </style>
+</head>
+<body>
+    <h1>Chart to Data</h1>
+    <p class="description">This page allows you to draw lines on a canvas and instantly get the data as JSON output. Useful for creating visualisation tests.</p>
+    
+    <div class="container">
+        <div class="section">
+            <h2>Settings</h2>
+            <div class="controls">
+                <div class="control-group">
+                    <label>X Axis Range</label>
+                    <div class="axis-inputs">
+                        <div>
+                            <label style="font-size: 12px; font-weight: normal;">Min</label>
+                            <input type="number" id="xMin" value="0" step="0.1">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: normal;">Max</label>
+                            <input type="number" id="xMax" value="10" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Y Axis Range</label>
+                    <div class="axis-inputs">
+                        <div>
+                            <label style="font-size: 12px; font-weight: normal;">Min</label>
+                            <input type="number" id="yMin" value="0" step="0.1">
+                        </div>
+                        <div>
+                            <label style="font-size: 12px; font-weight: normal;">Max</label>
+                            <input type="number" id="yMax" value="10" step="0.1">
+                        </div>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Detail Level</label>
+                    <select id="detailLevel">
+                        <option value="1">Very Low (1 in X)</option>
+                        <option value="2">Low (1 in 2)</option>
+                        <option value="3" selected>Medium (1 in 3)</option>
+                        <option value="5">High (1 in 5)</option>
+                        <option value="10">Very High (all)</option>
+                    </select>
+                </div>
+
+                <div class="control-group">
+                    <label>Background Image</label>
+                    <input type="file" id="backgroundImage" accept="image/*">
+                    <button id="pasteImageBtn">Paste from Clipboard</button>
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label for="imageOpacity" style="font-size: 12px; font-weight: normal; margin: 0;">Opacity:</label>
+                        <input type="range" id="imageOpacity" min="0" max="100" value="50" style="flex: 1; padding: 0;">
+                        <span id="opacityValue" style="font-size: 12px; min-width: 35px;">50%</span>
+                    </div>
+                    <button id="clearBg">Clear Background</button>
+                </div>
+
+                <div class="control-group">
+                    <label>Draw Color</label>
+                    <div style="display: flex; gap: 10px;">
+                        <input style="padding: 0px;" type="color" id="drawColor" value="#ff0000">
+                        <button id="addColor">Add Color Channel</button>
+                    </div>
+                </div>
+
+                <div class="control-group">
+                    <label>Active Channels</label>
+                    <div id="colorList" class="color-list"></div>
+                </div>
+
+                <div class="button-row">
+                    <button id="clearCanvas">Clear Canvas</button>
+                    <button id="clearData" class="danger">Clear All Data</button>
+                </div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Canvas</h2>
+            <div style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; flex-wrap: wrap;">
+                <label for="interpolationType" style="font-size: 12px; font-weight: bold;">Interpolation:</label>
+                <select id="interpolationType">
+                    <option value="basis" selected>basis (default)</option>
+                    <option value="linear">linear</option>
+                    <option value="step">step</option>
+                    <option value="step-before">step-before</option>
+                    <option value="step-after">step-after</option>
+                    <option value="cardinal">cardinal (tension)</option>
+                    <option value="catmullRom">catmull-rom (alpha)</option>
+                    <option value="monotoneX">monotoneX</option>
+                </select>
+                <label style="font-size: 12px; display: inline-flex; align-items: center; gap: 6px;">
+                    <input type="checkbox" id="interpolationEnabled" checked>
+                    Enabled
+                </label>
+                <label for="interpolationAlpha" style="font-size: 12px;">Amount:</label>
+                <input type="range" id="interpolationAlpha" min="0" max="1" step="0.05" value="0.5" style="width: 200px; padding: 0;">
+                <span id="interpolationAlphaValue" style="font-size: 12px;">0.50</span>
+            </div>
+            <canvas id="canvas"></canvas>
+        </div>
+
+        <div class="section">
+            <h2>JSON Output</h2>
+            <div style="display: flex; gap: 10px; margin-bottom: 10px;">
+                <button id="copyBtn" style="flex: 0;">Copy JSON</button>
+            </div>
+            <textarea id="output" readonly></textarea>
+        </div>
+    </div>
+
+    <!-- d3 for interpolation (curve generation) -->
+    <script src="https://cdn.jsdelivr.net/npm/d3@7/dist/d3.min.js"></script>
+    <script>
+        class ChartDrawer {
+            constructor() {
+                this.canvas = document.getElementById('canvas');
+                this.ctx = this.canvas.getContext('2d');
+                this.outputArea = document.getElementById('output');
+                
+                // Data storage: { color: hex -> array of {x, y} points }
+                this.data = {};
+                this.activeColor = '#ff0000';
+                this.colors = ['#ff0000'];
+                
+                // Axis ranges - read from inputs
+                this.xMin = parseFloat(document.getElementById('xMin').value);
+                this.xMax = parseFloat(document.getElementById('xMax').value);
+                this.yMin = parseFloat(document.getElementById('yMin').value);
+                this.yMax = parseFloat(document.getElementById('yMax').value);
+
+                // Detail level
+                this.detailLevel = parseInt(document.getElementById('detailLevel').value);
+
+                // d3 interpolation
+                this.interpolationType = 'basis';
+                this.interpolationAlpha = 0.5; // used for catmull-rom alpha or cardinal tension
+                this.interpolationEnabled = document.getElementById('interpolationEnabled').checked;
+
+                // Background image
+                this.backgroundImage = null;
+                this.imageOpacity = 0.5;
+
+                // Drawing state
+                this.isDrawing = false;
+
+                this.setupEventListeners();
+                this.updateColorList();
+                
+                // Set canvas resolution after everything is ready
+                this.resizeCanvas();
+                window.addEventListener('resize', () => this.resizeCanvas());
+            }
+
+            resizeCanvas() {
+                const rect = this.canvas.getBoundingClientRect();
+                this.canvas.width = rect.width;
+                this.canvas.height = rect.height;
+                this.draw();
+            }
+
+            setupEventListeners() {
+                // Canvas events
+                this.canvas.addEventListener('mousedown', (e) => this.startDrawing(e));
+                this.canvas.addEventListener('mousemove', (e) => this.drawPoint(e));
+                this.canvas.addEventListener('mouseup', () => this.stopDrawing());
+                this.canvas.addEventListener('mouseout', () => this.stopDrawing());
+
+                // Touch events for mobile
+                this.canvas.addEventListener('touchstart', (e) => this.startDrawing(e));
+                this.canvas.addEventListener('touchmove', (e) => this.drawPoint(e));
+                this.canvas.addEventListener('touchend', () => this.stopDrawing());
+
+                // Controls
+                document.getElementById('xMin').addEventListener('change', (e) => {
+                    this.xMin = parseFloat(e.target.value);
+                    this.draw();
+                });
+                document.getElementById('xMax').addEventListener('change', (e) => {
+                    this.xMax = parseFloat(e.target.value);
+                    this.draw();
+                });
+                document.getElementById('yMin').addEventListener('change', (e) => {
+                    this.yMin = parseFloat(e.target.value);
+                    this.draw();
+                });
+                document.getElementById('yMax').addEventListener('change', (e) => {
+                    this.yMax = parseFloat(e.target.value);
+                    this.draw();
+                });
+
+                document.getElementById('drawColor').addEventListener('change', (e) => {
+                    this.activeColor = e.target.value;
+                });
+
+                document.getElementById('detailLevel').addEventListener('change', (e) => {
+                    this.detailLevel = parseInt(e.target.value);
+                    this.updateOutput();
+                });
+
+                // Interpolation controls
+                const interpTypeEl = document.getElementById('interpolationType');
+                const interpAlphaEl = document.getElementById('interpolationAlpha');
+                const interpAlphaValueEl = document.getElementById('interpolationAlphaValue');
+                const interpEnabledEl = document.getElementById('interpolationEnabled');
+
+                const updateAlphaEnabled = () => {
+                    const type = this.interpolationType;
+                    const supportsAmount = (type === 'cardinal' || type === 'catmullRom');
+                    const enabled = this.interpolationEnabled;
+                    // dropdown enable/disable
+                    interpTypeEl.disabled = !enabled;
+                    interpTypeEl.style.opacity = enabled ? '1' : '0.5';
+                    // slider enable/disable depends on enabled and curve support
+                    const sliderOn = enabled && supportsAmount;
+                    interpAlphaEl.disabled = !sliderOn;
+                    interpAlphaEl.style.opacity = sliderOn ? '1' : '0.5';
+                    interpAlphaValueEl.style.opacity = sliderOn ? '1' : '0.5';
+                };
+
+                interpTypeEl.addEventListener('change', (e) => {
+                    this.interpolationType = e.target.value;
+                    updateAlphaEnabled();
+                    this.draw();
+                });
+
+                interpAlphaEl.addEventListener('input', (e) => {
+                    this.interpolationAlpha = parseFloat(e.target.value);
+                    interpAlphaValueEl.textContent = this.interpolationAlpha.toFixed(2);
+                });
+                interpAlphaEl.addEventListener('change', () => this.draw());
+
+                interpEnabledEl.addEventListener('change', (e) => {
+                    this.interpolationEnabled = e.target.checked;
+                    updateAlphaEnabled();
+                    this.draw();
+                });
+
+                // initialize alpha enabled state
+                updateAlphaEnabled();
+
+                document.getElementById('backgroundImage').addEventListener('change', (e) => {
+                    const file = e.target.files[0];
+                    if (file) {
+                        const reader = new FileReader();
+                        reader.onload = (event) => {
+                            const img = new Image();
+                            img.onload = () => {
+                                this.backgroundImage = img;
+                                this.draw();
+                            };
+                            img.src = event.target.result;
+                        };
+                        reader.readAsDataURL(file);
+                    }
+                });
+
+                document.getElementById('imageOpacity').addEventListener('change', (e) => {
+                    this.imageOpacity = parseInt(e.target.value) / 100;
+                    document.getElementById('opacityValue').textContent = e.target.value + '%';
+                    this.draw();
+                });
+
+                document.getElementById('imageOpacity').addEventListener('input', (e) => {
+                    document.getElementById('opacityValue').textContent = e.target.value + '%';
+                });
+
+                document.getElementById('clearBg').addEventListener('click', () => {
+                    this.backgroundImage = null;
+                    document.getElementById('backgroundImage').value = '';
+                    this.draw();
+                });
+
+                document.getElementById('pasteImageBtn').addEventListener('click', () => {
+                    this.pasteImageFromClipboard();
+                });
+
+                document.getElementById('addColor').addEventListener('click', () => {
+                    const color = document.getElementById('drawColor').value;
+                    if (!this.colors.includes(color)) {
+                        this.colors.push(color);
+                        this.activeColor = color;
+                        this.updateColorList();
+                        document.getElementById('drawColor').value = color;
+                    }
+                });
+
+                document.getElementById('clearCanvas').addEventListener('click', () => {
+                    this.data = {};
+                    for (const color of this.colors) {
+                        this.data[color] = [];
+                    }
+                    this.updateOutput();
+                    this.draw();
+                });
+
+                document.getElementById('clearData').addEventListener('click', () => {
+                    if (confirm('Delete all data?')) {
+                        this.data = {};
+                        this.colors = ['#ff0000'];
+                        this.activeColor = '#ff0000';
+                        for (const color of this.colors) {
+                            this.data[color] = [];
+                        }
+                        document.getElementById('drawColor').value = '#ff0000';
+                        this.updateColorList();
+                        this.updateOutput();
+                        this.draw();
+                    }
+                });
+
+                document.getElementById('copyBtn').addEventListener('click', () => {
+                    this.outputArea.select();
+                    document.execCommand('copy');
+                });
+            }
+
+            startDrawing(e) {
+                this.isDrawing = true;
+                this.drawPoint(e);
+            }
+
+            drawPoint(e) {
+                if (!this.isDrawing) return;
+
+                const rect = this.canvas.getBoundingClientRect();
+                let clientX, clientY;
+
+                if (e.touches) {
+                    clientX = e.touches[0].clientX;
+                    clientY = e.touches[0].clientY;
+                } else {
+                    clientX = e.clientX;
+                    clientY = e.clientY;
+                }
+
+                const pixelX = clientX - rect.left;
+                const pixelY = clientY - rect.top;
+
+                const dataPoint = this.pixelToData(pixelX, pixelY);
+
+                if (!this.data[this.activeColor]) {
+                    this.data[this.activeColor] = [];
+                }
+                this.data[this.activeColor].push(dataPoint);
+
+                this.updateOutput();
+                this.draw();
+            }
+
+            stopDrawing() {
+                this.isDrawing = false;
+            }
+
+            pixelToData(pixelX, pixelY) {
+                const dataX = this.xMin + (pixelX / this.canvas.width) * (this.xMax - this.xMin);
+                const dataY = this.yMax - (pixelY / this.canvas.height) * (this.yMax - this.yMin);
+                
+                return {
+                    x: parseFloat(dataX.toFixed(3)),
+                    y: parseFloat(dataY.toFixed(3))
+                };
+            }
+
+            dataToPixel(dataX, dataY) {
+                const pixelX = ((dataX - this.xMin) / (this.xMax - this.xMin)) * this.canvas.width;
+                const pixelY = ((this.yMax - dataY) / (this.yMax - this.yMin)) * this.canvas.height;
+                
+                return { pixelX, pixelY };
+            }
+
+            draw() {
+                // Clear canvas
+                this.ctx.fillStyle = '#ffffff';
+                this.ctx.fillRect(0, 0, this.canvas.width, this.canvas.height);
+
+                // Draw background image if present
+                if (this.backgroundImage) {
+                    this.ctx.globalAlpha = this.imageOpacity;
+                    this.ctx.drawImage(this.backgroundImage, 0, 0, this.canvas.width, this.canvas.height);
+                    this.ctx.globalAlpha = 1;
+                }
+
+                // Draw grid
+                this.drawGrid();
+
+                // Draw axes
+                this.drawAxes();
+
+                // Draw data
+                this.drawData();
+            }
+
+            drawGrid() {
+                this.ctx.strokeStyle = '#eeeeee';
+                this.ctx.lineWidth = 1;
+
+                // Vertical lines
+                const xStep = (this.xMax - this.xMin) / 10;
+                for (let i = 0; i <= 10; i++) {
+                    const x = this.xMin + i * xStep;
+                    const { pixelX } = this.dataToPixel(x, 0);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(pixelX, 0);
+                    this.ctx.lineTo(pixelX, this.canvas.height);
+                    this.ctx.stroke();
+                }
+
+                // Horizontal lines
+                const yStep = (this.yMax - this.yMin) / 10;
+                for (let i = 0; i <= 10; i++) {
+                    const y = this.yMin + i * yStep;
+                    const { pixelY } = this.dataToPixel(0, y);
+                    this.ctx.beginPath();
+                    this.ctx.moveTo(0, pixelY);
+                    this.ctx.lineTo(this.canvas.width, pixelY);
+                    this.ctx.stroke();
+                }
+            }
+
+            drawAxes() {
+                this.ctx.strokeStyle = '#333333';
+                this.ctx.lineWidth = 2;
+
+                // X axis
+                const { pixelY: xAxisY } = this.dataToPixel(0, this.yMin);
+                this.ctx.beginPath();
+                this.ctx.moveTo(0, xAxisY);
+                this.ctx.lineTo(this.canvas.width, xAxisY);
+                this.ctx.stroke();
+
+                // Y axis
+                const { pixelX: yAxisX } = this.dataToPixel(this.xMin, 0);
+                this.ctx.beginPath();
+                this.ctx.moveTo(yAxisX, 0);
+                this.ctx.lineTo(yAxisX, this.canvas.height);
+                this.ctx.stroke();
+
+                // Axis labels
+                this.ctx.fillStyle = '#333333';
+                this.ctx.font = '12px monospace';
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(`X: ${this.xMin.toFixed(1)} - ${this.xMax.toFixed(1)}`, this.canvas.width / 2, this.canvas.height - 5);
+                
+                this.ctx.save();
+                this.ctx.translate(10, this.canvas.height / 2);
+                this.ctx.rotate(-Math.PI / 2);
+                this.ctx.textAlign = 'center';
+                this.ctx.fillText(`Y: ${this.yMin.toFixed(1)} - ${this.yMax.toFixed(1)}`, 0, 0);
+                this.ctx.restore();
+            }
+
+            drawData() {
+                for (const color of this.colors) {
+                    const points = this.data[color] || [];
+                    if (points.length === 0) continue;
+
+                    this.ctx.strokeStyle = color;
+                    this.ctx.lineWidth = 2;
+                    this.ctx.lineCap = 'round';
+                    this.ctx.lineJoin = 'round';
+
+                    if (this.interpolationEnabled) {
+                        // d3 interpolation path
+                        const getCurve = () => {
+                            const t = this.interpolationType;
+                            const a = this.interpolationAlpha;
+                            switch (t) {
+                                case 'linear': return d3.curveLinear;
+                                case 'step': return d3.curveStep;
+                                case 'step-before': return d3.curveStepBefore;
+                                case 'step-after': return d3.curveStepAfter;
+                                case 'cardinal': return d3.curveCardinal.tension(Math.max(0, Math.min(1, a)));
+                                case 'catmullRom': return d3.curveCatmullRom.alpha(Math.max(0, Math.min(1, a)));
+                                case 'monotoneX': return d3.curveMonotoneX;
+                                case 'basis':
+                                default: return d3.curveBasis;
+                            }
+                        };
+
+                        const lineGen = d3.line()
+                            .x(d => this.dataToPixel(d.x, d.y).pixelX)
+                            .y(d => this.dataToPixel(d.x, d.y).pixelY)
+                            .curve(getCurve())
+                            .context(this.ctx);
+
+                        this.ctx.beginPath();
+                        lineGen(points);
+                        this.ctx.stroke();
+                    } else {
+                        // Raw polyline drawing
+                        this.ctx.beginPath();
+                        const first = this.dataToPixel(points[0].x, points[0].y);
+                        this.ctx.moveTo(first.pixelX, first.pixelY);
+                        for (let i = 1; i < points.length; i++) {
+                            const p = this.dataToPixel(points[i].x, points[i].y);
+                            this.ctx.lineTo(p.pixelX, p.pixelY);
+                        }
+                        this.ctx.stroke();
+                    }
+                }
+            }
+
+            updateColorList() {
+                const colorList = document.getElementById('colorList');
+                colorList.innerHTML = '';
+
+                for (const color of this.colors) {
+                    const item = document.createElement('div');
+                    item.className = 'color-item';
+
+                    const swatch = document.createElement('div');
+                    swatch.className = 'color-swatch';
+                    swatch.style.backgroundColor = color;
+                    swatch.addEventListener('click', () => {
+                        this.activeColor = color;
+                        document.getElementById('drawColor').value = color;
+                    });
+
+                    const info = document.createElement('div');
+                    info.className = 'color-info';
+                    const pointCount = (this.data[color] || []).length;
+                    info.innerHTML = `<span class="label">${color} (${pointCount} points)</span>`;
+
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'danger';
+                    deleteBtn.textContent = 'Delete';
+                    deleteBtn.addEventListener('click', () => {
+                        this.colors = this.colors.filter(c => c !== color);
+                        delete this.data[color];
+                        if (this.activeColor === color) {
+                            this.activeColor = this.colors[0] || '#ff0000';
+                            document.getElementById('drawColor').value = this.activeColor;
+                        }
+                        this.updateColorList();
+                        this.updateOutput();
+                        this.draw();
+                    });
+
+                    item.appendChild(swatch);
+                    item.appendChild(info);
+                    item.appendChild(deleteBtn);
+                    colorList.appendChild(item);
+                }
+            }
+
+            updateOutput() {
+                const output = {};
+                for (const color of this.colors) {
+                    const points = this.data[color] || [];
+                    // Apply detail level sampling
+                    output[color] = points.filter((_, index) => index % this.detailLevel === 0);
+                }
+                this.outputArea.value = JSON.stringify(output, null, 2);
+            }
+
+            pasteImageFromClipboard() {
+                navigator.clipboard.read().then(items => {
+                    for (const item of items) {
+                        if (item.types.includes('image/png') || item.types.includes('image/jpeg') || item.types.includes('image/webp')) {
+                            item.getType(item.types.find(t => t.startsWith('image/'))).then(blob => {
+                                const reader = new FileReader();
+                                reader.onload = (event) => {
+                                    const img = new Image();
+                                    img.onload = () => {
+                                        this.backgroundImage = img;
+                                        this.draw();
+                                    };
+                                    img.src = event.target.result;
+                                };
+                                reader.readAsDataURL(blob);
+                            });
+                            return;
+                        }
+                    }
+                    alert('No image found in clipboard');
+                }).catch(err => {
+                    alert('Failed to read clipboard. Make sure the page has clipboard permissions.');
+                    console.error('Clipboard error:', err);
+                });
+            }
+        }
+
+        // Initialize app when DOM is ready
+        document.addEventListener('DOMContentLoaded', () => {
+            new ChartDrawer();
+        });
+    </script>
+</body>
+</html>
